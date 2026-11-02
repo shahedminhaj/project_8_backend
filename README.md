@@ -20,6 +20,7 @@ The API listens on port 5000 by default. `CLIENT_ORIGIN` should match the fronte
 - `GET /api/health` — readiness check.
 - `GET /api/token` — exchange a valid Better Auth session cookie for a 15-minute HS256 Bearer token.
 - `GET /api/events` and `GET /api/events/:id` — public event listings and details.
+- Event create/update requests require a future `date` (`YYYY-MM-DD`) and a `time` (`HH:mm`, 24-hour format).
 - `POST /api/events` — create an event (requires `Authorization: Bearer <token>`).
 - `PATCH /api/events/:id` and `DELETE /api/events/:id` — update or delete your own event (Bearer token required).
 - `POST /api/events/:id/join` — join an event (Bearer token required).

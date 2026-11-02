@@ -11,6 +11,7 @@ function validEvent(overrides = {}) {
     category: "Plantation",
     location: "Gulshan, Dhaka",
     date: future.toISOString().slice(0, 10),
+    time: "09:00",
     image: "https://example.com/garden.jpg",
     ...overrides,
   };
@@ -33,6 +34,18 @@ test("eventInput rejects invalid dates", () => {
   assert.throws(
     () => eventInput(validEvent({ date: "2027-02-30" })),
     (error) => error instanceof ApiError && error.message === "Enter a valid event date.",
+  );
+});
+
+test("eventInput accepts and preserves a valid event time", () => {
+  const result = eventInput(validEvent({ time: "18:45" }));
+  assert.equal(result.time, "18:45");
+});
+
+test("eventInput rejects invalid event times", () => {
+  assert.throws(
+    () => eventInput(validEvent({ time: "25:90" })),
+    (error) => error instanceof ApiError && error.status === 400,
   );
 });
 

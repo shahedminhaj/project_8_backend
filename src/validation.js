@@ -15,7 +15,7 @@ const eventCategories = new Set([
 ]);
 
 export function eventInput(body) {
-  const fields = ["title", "description", "category", "location", "date", "image"];
+  const fields = ["title", "description", "category", "location", "date", "time", "image"];
   const values = Object.fromEntries(
     fields.map((field) => [field, typeof body?.[field] === "string" ? body[field].trim() : ""]),
   );
@@ -28,7 +28,8 @@ export function eventInput(body) {
     !eventCategories.has(values.category) ||
     values.location.length < 3 ||
     values.location.length > 100 ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(values.date)
+    !/^\d{4}-\d{2}-\d{2}$/.test(values.date) ||
+    !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(values.time)
   ) {
     throw new ApiError(400, "Provide valid event details.");
   }

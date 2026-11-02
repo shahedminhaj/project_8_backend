@@ -65,6 +65,7 @@ export async function seedEvents(events) {
     return {
       ...event,
       date: date.toISOString().slice(0, 10),
+      time: "09:00",
       creatorEmail: "hello@commonplace.community",
       creatorName: "Commonplace team",
       creatorId: null,
