@@ -18,12 +18,13 @@ The API listens on port 5000 by default. `CLIENT_ORIGIN` should match the fronte
 ## API
 
 - `GET /api/health` — readiness check.
+- `GET /api/token` — exchange a valid Better Auth session cookie for a 15-minute HS256 Bearer token.
 - `GET /api/events` and `GET /api/events/:id` — public event listings and details.
-- `POST /api/events` — create an event (signed-in users).
-- `PATCH /api/events/:id` and `DELETE /api/events/:id` — update or delete your own event.
-- `POST /api/events/:id/join` — join an event (signed-in users).
-- `DELETE /api/events/:id/join` — leave an event (signed-in users).
-- `GET /api/events/joined` — list event IDs joined by the signed-in user.
+- `POST /api/events` — create an event (requires `Authorization: Bearer <token>`).
+- `PATCH /api/events/:id` and `DELETE /api/events/:id` — update or delete your own event (Bearer token required).
+- `POST /api/events/:id/join` — join an event (Bearer token required).
+- `DELETE /api/events/:id/join` — leave an event (Bearer token required).
+- `GET /api/events/joined` — list event IDs joined by the signed-in user (Bearer token required).
 - Better Auth endpoints are available under `/api/auth/*`, including email/password and Google/GitHub OAuth.
 
-The frontend must send requests with cookies enabled; its API client does this automatically.
+Set a high-entropy `JWT_SECRET` of at least 32 characters. The API signs HS256 tokens with `iss` set to `BETTER_AUTH_URL`, `aud` set to `CLIENT_ORIGIN`, and a 15-minute expiry. The frontend keeps the access token in memory and refreshes it using the Better Auth session cookie; it sends the token in an Authorization header for protected API requests.

@@ -3,6 +3,7 @@ import express from "express";
 import { ObjectId } from "mongodb";
 import { auth } from "./auth.js";
 import { database, mongoClient } from "./database.js";
+import { issueAccessToken, requireAccessToken } from "./jwt.js";
 import { seedEvents } from "./seed.js";
 import { ApiError, eventInput } from "./validation.js";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
@@ -58,16 +59,19 @@ app.get("/api/health", (_request, response) => {
   response.json({ status: "ok" });
 });
 
+app.get("/api/token", async (request, response) => {
+  const session = await currentSession(request);
+  if (!session) throw new ApiError(401, "Please sign in before requesting an access token.");
+  response.json(issueAccessToken(session.user));
+});
+
 app.get("/api/events", async (_request, response) => {
   const list = await events.find().sort({ date: 1, createdAt: -1 }).toArray();
   response.json(list.map(serializeEvent));
 });
 
-app.get("/api/events/joined", async (request, response) => {
-  const session = await currentSession(request);
-  if (!session) throw new ApiError(401, "Please sign in to view joined events.");
-
-  const joined = await events.find({ attendees: session.user.id }).project({ _id: 1 }).toArray();
+app.get("/api/events/joined", requireAccessToken, async (request, response) => {
+  const joined = await events.find({ attendees: request.authUser.id }).project({ _id: 1 }).toArray();
   response.json(joined.map((event) => event._id.toString()));
 });
 
@@ -77,16 +81,13 @@ app.get("/api/events/:id", async (request, response) => {
   response.json(serializeEvent(event));
 });
 
-app.post("/api/events", async (request, response) => {
-  const session = await currentSession(request);
-  if (!session) throw new ApiError(401, "Please sign in to create an event.");
-
+app.post("/api/events", requireAccessToken, async (request, response) => {
   const now = new Date();
   const event = {
     ...eventInput(request.body),
-    creatorId: session.user.id,
-    creatorEmail: session.user.email,
-    creatorName: session.user.name,
+    creatorId: request.authUser.id,
+    creatorEmail: request.authUser.email,
+    creatorName: request.authUser.name,
     attendees: [],
     createdAt: now,
     updatedAt: now,
@@ -95,14 +96,11 @@ app.post("/api/events", async (request, response) => {
   response.status(201).json(serializeEvent({ ...event, _id: result.insertedId }));
 });
 
-app.patch("/api/events/:id", async (request, response) => {
-  const session = await currentSession(request);
-  if (!session) throw new ApiError(401, "Please sign in to update an event.");
-
+app.patch("/api/events/:id", requireAccessToken, async (request, response) => {
   const id = validId(request.params.id);
   const event = await events.findOne({ _id: id });
   if (!event) throw new ApiError(404, "Event not found.");
-  if (event.creatorId !== session.user.id) throw new ApiError(403, "You can only update events you created.");
+  if (event.creatorId !== request.authUser.id) throw new ApiError(403, "You can only update events you created.");
 
   const updated = {
     ...eventInput(request.body),
@@ -112,38 +110,29 @@ app.patch("/api/events/:id", async (request, response) => {
   response.json(serializeEvent({ ...event, ...updated }));
 });
 
-app.delete("/api/events/:id", async (request, response) => {
-  const session = await currentSession(request);
-  if (!session) throw new ApiError(401, "Please sign in to delete an event.");
-
+app.delete("/api/events/:id", requireAccessToken, async (request, response) => {
   const id = validId(request.params.id);
   const event = await events.findOne({ _id: id });
   if (!event) throw new ApiError(404, "Event not found.");
-  if (event.creatorId !== session.user.id) throw new ApiError(403, "You can only delete events you created.");
+  if (event.creatorId !== request.authUser.id) throw new ApiError(403, "You can only delete events you created.");
 
   await events.deleteOne({ _id: id });
   response.status(204).end();
 });
 
-app.post("/api/events/:id/join", async (request, response) => {
-  const session = await currentSession(request);
-  if (!session) throw new ApiError(401, "Please sign in to join an event.");
-
+app.post("/api/events/:id/join", requireAccessToken, async (request, response) => {
   const result = await events.updateOne(
     { _id: validId(request.params.id) },
-    { $addToSet: { attendees: session.user.id }, $set: { updatedAt: new Date() } },
+    { $addToSet: { attendees: request.authUser.id }, $set: { updatedAt: new Date() } },
   );
   if (!result.matchedCount) throw new ApiError(404, "Event not found.");
   response.json({ joined: true });
 });
 
-app.delete("/api/events/:id/join", async (request, response) => {
-  const session = await currentSession(request);
-  if (!session) throw new ApiError(401, "Please sign in to leave an event.");
-
+app.delete("/api/events/:id/join", requireAccessToken, async (request, response) => {
   const result = await events.updateOne(
     { _id: validId(request.params.id) },
-    { $pull: { attendees: session.user.id }, $set: { updatedAt: new Date() } },
+    { $pull: { attendees: request.authUser.id }, $set: { updatedAt: new Date() } },
   );
   if (!result.matchedCount) throw new ApiError(404, "Event not found.");
   response.json({ joined: false });
