@@ -55,6 +55,14 @@ app.use((request, response, next) => {
 });
 app.use(express.json({ limit: "32kb" }));
 
+app.get("/", (_request, response) => {
+  response.json({
+    name: "Commonplace API",
+    health: "/api/health",
+    endpoints: ["/api/events", "/api/token", "/api/auth/*"],
+  });
+});
+
 app.get("/api/health", (_request, response) => {
   response.json({ status: "ok" });
 });

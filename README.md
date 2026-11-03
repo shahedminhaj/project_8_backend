@@ -17,6 +17,7 @@ The API listens on port 5000 by default. `CLIENT_ORIGIN` should match the fronte
 
 ## API
 
+- `GET /` — API information and links to the health check and common endpoints.
 - `GET /api/health` — readiness check.
 - `GET /api/token` — exchange a valid Better Auth session cookie for a 15-minute HS256 Bearer token.
 - `GET /api/events` and `GET /api/events/:id` — public event listings and details.
