@@ -2,7 +2,7 @@
 
 MongoDB-backed API and authentication for the Commonplace frontend.
 
-## Setup
+## Setup of env file and run
 
 1. Copy `.env.example` to `.env` and fill in the values.
 2. Set `MONGODB_URI` to a MongoDB connection string and optionally choose `MONGODB_DB`.
