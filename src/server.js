@@ -30,6 +30,7 @@ function serializeEvent(event) {
     category: event.category,
     location: event.location,
     date: event.date,
+    time: event.time,
     image: event.image,
     creatorEmail: event.creatorEmail,
     creatorName: event.creatorName,
